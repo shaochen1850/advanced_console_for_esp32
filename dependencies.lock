@@ -1,0 +1,35 @@
+dependencies:
+  espressif/console_cmd_ping:
+    component_hash: 831875b3b6a9983b34abab2ecba7ca83447600912eda4b126948e1e439cf4a11
+    dependencies:
+    - name: espressif/console_simple_init
+      registry_url: https://components.espressif.com
+      require: public
+      version: '>=1.1.0'
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.2.0
+  espressif/console_simple_init:
+    component_hash: b488b12318f3cb6e0b55b034bd12956926d45f0e1396442e820f8ece4776c306
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.0
+  idf:
+    source:
+      type: idf
+    version: 6.0.1
+direct_dependencies:
+- espressif/console_cmd_ping
+- idf
+manifest_hash: 8b7e4f195a8c0848d481b7d98d11bb373ac77d6146c3b705a4645f79f8662dc5
+target: esp32s3
+version: 3.0.0

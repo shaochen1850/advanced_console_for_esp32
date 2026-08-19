@@ -1,0 +1,25 @@
+# ESP-IDF compile products
+build/
+sdkconfig
+sdkconfig.old
+*.bin
+*.elf
+*.o
+*.a
+*.so
+*.d
+*.dSYM  
+.vscode/
+# managed compoenents (cmd_ping,simple_init)
+managed_components/
+# sdkconfig
+sdkconfig
+sdkconfig.old
+
+.idea/
+cmake-build-*/
+
+# MACOS generated files
+.DS_Store
+Thumbs.db
+
