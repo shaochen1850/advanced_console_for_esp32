@@ -1,4 +1,4 @@
-# ESP32 Console Framework
+# ESP32 Advanced Console
 
 
 [English](#english) | [中文](#中文)

@@ -75,11 +75,19 @@ static int do_tail(int argc, char **argv) {
 
     if (num->count > 0) nlines = num->ival[0];
     if (file->count > 0) filepath = file->filename[0];
+    // Important fix: Ensure nlines is positive to avoid invalid memory access
+    if (nlines <= 0) {
+        printf("tail: invalid number of lines: %d\n", nlines);
+        arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
+        return 1;
+    }
+
 
     /* circular buffer of nlines pointers */
     char **ring = calloc(nlines, sizeof(char *));
     if (!ring) {
         printf("tail: out of memory\n");
+        arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
         return 1;
     }
 

@@ -11,30 +11,35 @@
  * The original example code is in the Public Domain (or CC0 licensed, at your option.)
 */
 
-//Standard C library includes
+// Standard C headers
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-//Espressif includes
+#include <sys/stat.h>
+
+// Espressif headers
 #include "esp_system.h"
 #include "esp_log.h"
 #include "esp_console.h"
 #include "esp_vfs_fat.h"
-//Linenoise and argtable3 includes
+
+// Linenoise and Argtable3 headers
 #include "linenoise/linenoise.h"
 #include "argtable3/argtable3.h"
-//NVS includes
+
+// NVS headers
 #include "nvs.h"
 #include "nvs_flash.h"
-//soc includes
+
+// SoC headers
 #include "soc/soc_caps.h"
-//Freertos includes
-#include <sys/stat.h>
+
+// FreeRTOS headers
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-//cmd and app includes
-//Remember to add the header files here if add a new cmd_xxx
+
+// Command and Application headers
 #include "cmd_system.h"
 #include "cmd_wifi.h"
 #include "cmd_nvs.h"
@@ -42,11 +47,11 @@
 #include "cmd_netutils.h"
 #include "cmd_fs.h"
 #include "cmd_sysmgmt.h"
-//App ws2812 includes
 #include "led_driver.h"
 #include "led_effects.h"
 #include "app_ws2812.h"
-/*managed components*/
+
+// Managed component headers
 #include "console_ping.h"
 #include "console_settings.h"
 
@@ -275,16 +280,69 @@ static void initialize_nvs(void)
     ESP_ERROR_CHECK(err);
 }
 
+static void register_core_commands(void)
+{
+    esp_console_register_help_command();
+}
+
+static void register_system_commands(void)
+{
+    register_system_common();
+    register_edit();
+    register_head();
+    register_tail();
+    register_watch();
+#if SOC_LIGHT_SLEEP_SUPPORTED
+    register_system_light_sleep();
+#endif
+#if SOC_DEEP_SLEEP_SUPPORTED
+    register_system_deep_sleep();
+#endif
+}
+
+static void register_network_commands(void)
+{
+#if (CONFIG_ESP_WIFI_ENABLED || CONFIG_ESP_HOST_WIFI_ENABLED)
+    register_wifi();
+#endif
+    register_netutils();
+    console_cmd_ping_register();
+    console_cmd_getaddrinfo_register();
+    console_cmd_setdnsserver_register();
+    console_cmd_getdnsserver_register();
+}
+
+static void register_storage_commands(void)
+{
+    register_nvs();
+    register_fs();
+}
+
+static void register_app_commands(void)
+{
+    register_ble();
+    register_sysmgmt();
+    app_ws2812_register();
+}
+
+static void register_all_commands(void)
+{
+    register_core_commands();
+    register_system_commands();
+    register_network_commands();
+    register_storage_commands();
+    register_app_commands();
+}
+
+#define SHELL_OK              0
+#define SHELL_ERR            (-1)
+#define SHELL_CMD_NOT_FOUND  (-2)
+
 void app_main(void)
 {
     initialize_nvs();
-
-#if CONFIG_CONSOLE_STORE_HISTORY
+    /* Initialize filesystem no matter the command history enabled or not */
     initialize_filesystem();
-    ESP_LOGI(TAG, "Command history enabled");
-#else
-    ESP_LOGI(TAG, "Command history disabled");
-#endif
 
     /* Initialize console output periheral (UART, USB_OTG, USB_JTAG) */
     initialize_console_peripheral();
@@ -292,92 +350,48 @@ void app_main(void)
     /* Initialize linenoise library and esp_console*/
     initialize_console_library(HISTORY_PATH);
 
-    /* Initialize WS2812 LED driver and effects */
-    ESP_ERROR_CHECK(led_driver_init(48));     // Mofify GPIO number here if you use a different GPIO for WS2812 data line
+    /* Initialize WS2812 LED driver and effects
+     * Needs to be modified, for the led_fx daemon task may be killed
+    */
+    ESP_ERROR_CHECK(led_driver_init(48));     // Modify GPIO number here if you use a different GPIO for WS2812 data line
     ESP_ERROR_CHECK(led_effects_init());
+
+    /* Register all console commands */
+    register_all_commands();
+
+    /* Welcome MOTD */
+    printf("\n"
+           "Welcome to console.\n"
+           "Type 'help' to get the list of commands.\n"
+           "Use UP/DOWN arrows to navigate through command history.\n"
+           "Press TAB when typing command name to auto-complete.\n"
+           "Ctrl+C will terminate the console environment.\n"
+           "For testing purpose only.\n");
+
+    if (linenoiseIsDumbMode()) {
+        printf("\n"
+               "Your terminal application does not support escape sequences.\n"
+               "Line editing and history features are disabled.\n"
+               "The easiest way to fix this issue is to restart your board with serial connected.\n"
+               "On Windows, try using Windows Terminal or Putty instead.\n");
+    }
+
 
     /* Prompt to be printed before each line.
      * This can be customized, made dynamic, etc.
      */
     const char *prompt = setup_prompt(PROMPT_STR "> ");
 
-    /* Register commands */
-    /*remember to add the command registration below if you add a new cmd_xxx */
-    /* This does register help command, didn't change */
-    esp_console_register_help_command();
-
-    /* This does register system command */
-    register_system_common();
-    register_edit();
-    register_head();
-    register_tail();
-    register_watch();
-
-    /* This does register sleep command, didn't change*/
-#if SOC_LIGHT_SLEEP_SUPPORTED
-    register_system_light_sleep();
-#endif
-#if SOC_DEEP_SLEEP_SUPPORTED
-    register_system_deep_sleep();
-#endif
-
-    /* This does register WiFi command*/
-#if (CONFIG_ESP_WIFI_ENABLED || CONFIG_ESP_HOST_WIFI_ENABLED)
-    register_wifi();
-#endif
-
-    /* This does register BLE command*/
-    register_ble();
-
-    /* This does register NVS command*/ 
-    register_nvs();
-
-    /* This does register NETUTILS command*/
-    register_netutils();
-
-    /*This does register File System command*/
-    register_fs();
-
-    /*This does register System Management command*/
-    register_sysmgmt();
-
-    /*This does register WS2812 command*/
-    app_ws2812_register();
-
-    /*Register depended commands*/
-    console_cmd_ping_register();
-    console_cmd_getaddrinfo_register();
-    console_cmd_setdnsserver_register();
-    console_cmd_getdnsserver_register();
-
-    /* End of command registration */
-
-    /* Welcome MOTD */
-    printf("\n"
-           "This is an example of ESP-IDF console component.\n"
-           "Type 'help' to get the list of commands.\n"
-           "Use UP/DOWN arrows to navigate through command history.\n"
-           "Press TAB when typing command name to auto-complete.\n"
-           "Ctrl+C will terminate the console environment.\n"
-           "Modified by bddx.\n");
-
-    if (linenoiseIsDumbMode()) {
-        printf("\n"
-               "Your terminal application does not support escape sequences.\n"
-               "Line editing and history features are disabled.\n"
-               "On Windows, try using Windows Terminal or Putty instead.\n");
-    }
-
     /* Main loop */
     while(true) {
         /* Get a line using linenoise.
          * The line is returned when ENTER is pressed.
          */
-        char* line = linenoise(prompt);
+        char *line = linenoise(prompt);
 
 #if CONFIG_CONSOLE_IGNORE_EMPTY_LINES
         if (line == NULL) { /* Ignore empty lines */
-            continue;;
+            continue;
         }
 #else
         if (line == NULL) { /* Break on EOF or error */
@@ -385,36 +399,22 @@ void app_main(void)
         }
 #endif // CONFIG_CONSOLE_IGNORE_EMPTY_LINES
 
-        /* Add the command to the history if not empty*/
+    /* Add the command to the history if not empty*/
         if (strlen(line) > 0) {
             linenoiseHistoryAdd(line);
 #if CONFIG_CONSOLE_STORE_HISTORY
-            /* Save command history to filesystem */
+    /* Save command history to filesystem */
             linenoiseHistorySave(HISTORY_PATH);
 #endif // CONFIG_CONSOLE_STORE_HISTORY
         }
 
         /* Try to run the command */
-        /* Original loop
-        int ret;
-        esp_err_t err = esp_console_run(line, &ret);
-        if (err == ESP_ERR_NOT_FOUND) {
-            printf("Unrecognized command. Check spelling or type 'help' for available commands.\n");
-        } else if (err == ESP_ERR_INVALID_ARG) {
-            // command was empty
-        } else if (err == ESP_OK && ret != ESP_OK) {
-            printf("Command returned non-zero error code: 0x%x (%s)\n", ret, esp_err_to_name(ret));
-        } else if (err != ESP_OK) {
-            printf("Internal error: %s\n", esp_err_to_name(err));
-        }
-        */
 
         /* Now it runs through our shell parser (supports ; | & #) */
         int ret = shell_run_line(line);
-        if (ret == -2) {
-            printf("Unrecognized command. Check spelling or type 'help' for available commands.\n");
+        if (ret == SHELL_CMD_NOT_FOUND) {
+            printf("Check spelling or type 'help' for available commands.\n");
         }
-
         /* linenoise allocates line buffer on the heap, so need to free it */
         linenoiseFree(line);
     }

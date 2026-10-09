@@ -375,9 +375,16 @@ static void init_resp(resp_buf_t *rb)
 
 static void append_resp(resp_buf_t *rb, const char *data, int len)
 {
+    if (len <= 0 || data == NULL) return;
     if (rb->capacity - rb->len < (size_t)len + 1) {
         rb->capacity = rb->len + len + 1024;
-        rb->buf = realloc(rb->buf, rb->capacity);
+        char *new_buf = realloc(rb->buf, rb->capacity);
+        if (!new_buf) {
+            // 内存不足时，保留已有数据，放弃本次追加
+            rb->capacity = rb->len;  // 回滚容量
+            return;
+        }
+        rb->buf = new_buf;
     }
     memcpy(rb->buf + rb->len, data, len);
     rb->len += len;
@@ -499,6 +506,7 @@ static int cmd_curl(int argc, char **argv)
     esp_http_client_config_t config = {
         .url = url,
         .event_handler = http_event_handler,
+        .timeout_ms = 10000, //Timeout on 10 secs
     };
 
     resp_buf_t rb;

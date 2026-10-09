@@ -122,7 +122,7 @@ void initialize_console_library(const char *history_path)
     linenoiseSetHintsCallback((linenoiseHintsCallback*) &esp_console_get_hint);
 
     /* Set command history size */
-    linenoiseHistorySetMaxLen(100);
+    linenoiseHistorySetMaxLen(64);
 
     /* Set command maximum length */
     linenoiseSetMaxLineLen(console_config.max_cmdline_length);
