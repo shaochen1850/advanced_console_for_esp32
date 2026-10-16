@@ -14,4 +14,4 @@ dependencies:
   #   # `public` flag doesn't have an effect dependencies of the `main` component.
   #   # All dependencies of `main` are public by default.
   #   public: true
-  espressif/console_cmd_ping: ^1.2.0
+  espressif/console_cmd_ping: '*'

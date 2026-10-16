@@ -34,7 +34,7 @@
 
 #### 环境要求
 
-- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) v5.x 或更高版本，推荐使用ESP-IDF v6.0.1，因为这个版本我编译测试过。
+- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) v5.x 或更高版本，推荐使用ESP-IDF v6.1，因为这个版本我编译测试过。
 - 支持的目标芯片开发板，至少有2MB的Flash
 
 #### 需要添加的依赖项
@@ -229,7 +229,7 @@ This project is at an early stage. It works (most of the time) and may contain b
 
 #### Requirements
 
-- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) v5.x or later, While I recommend esp-idf v6.0.1 for I already tested it.
+- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) v5.x or later, While I recommend esp-idf v6.1 for I already tested it.
 - A supported development board, with at least 2MB Flash
 
 #### Depencies
